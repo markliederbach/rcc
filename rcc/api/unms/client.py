@@ -19,6 +19,7 @@ class UNMSClient(BaseHttpClient):
         users_endpoint=None,
         devices_endpoint=None,
         create_backup_endpoint=None,
+        upload_backup_endpoint=None,
         delete_backup_endpoint=None,
         get_backup_endpoint=None,
         session_timeout=None,
@@ -29,8 +30,15 @@ class UNMSClient(BaseHttpClient):
         self.login_endpoint = login_endpoint or "/user/login"
         self.users_endpoint = users_endpoint or "/users"
         self.devices_endpoint = devices_endpoint
-        self.create_backup_endpoint = create_backup_endpoint or "/devices/{device_id}/backups"
-        self.delete_backup_endpoint = delete_backup_endpoint or f"{self.create_backup_endpoint}/{{backup_id}}"
+        self.create_backup_endpoint = (
+            create_backup_endpoint or "/devices/{device_id}/backups"
+        )
+        self.upload_backup_endpoint = (
+            upload_backup_endpoint or self.create_backup_endpoint
+        )
+        self.delete_backup_endpoint = (
+            delete_backup_endpoint or f"{self.create_backup_endpoint}/{{backup_id}}"
+        )
         self.get_backup_endpoint = get_backup_endpoint or self.delete_backup_endpoint
         self.token_header = token_header or "x-auth-token"
         self.session_timeout = session_timeout or 3_600_000
@@ -96,7 +104,6 @@ class UNMSClient(BaseHttpClient):
         if self.token_expired():
             self.token, self.expire_time = self.get_token()
 
-
     def create_backup(self, device_id):
         endpoint = self.create_backup_endpoint.format(device_id=device_id)
         response = self.post_data(endpoint)
@@ -104,18 +111,30 @@ class UNMSClient(BaseHttpClient):
         return response_body["id"]
 
     def delete_backup(self, device_id, backup_id):
-        endpoint = self.delete_backup_endpoint.format(device_id=device_id, backup_id=backup_id)
+        endpoint = self.delete_backup_endpoint.format(
+            device_id=device_id, backup_id=backup_id
+        )
         response = self.delete_data(endpoint)
         return response.json()["result"]
 
     def get_backup(self, device_id, backup_id, filepath=None, replace_umns_key=False):
-        endpoint = self.get_backup_endpoint.format(device_id=device_id, backup_id=backup_id)
-        response = self.get_data(endpoint, params={"replaceUnmsKey": str(replace_umns_key).lower()})
+        endpoint = self.get_backup_endpoint.format(
+            device_id=device_id, backup_id=backup_id
+        )
+        response = self.get_data(
+            endpoint, params={"replaceUnmsKey": str(replace_umns_key).lower()}
+        )
         if filepath:
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 f.write(response.content)
             return filepath
         return response.content
+
+    def upload_backup(self, device_id, filepath):
+        endpoint = self.upload_backup_endpoint.format(device_id=device_id)
+        files = {"file": (os.path.basename(filepath), open(filepath, "rb"))}
+        response = self.put_data(endpoint, files=files)
+        return response.json()["id"]
 
 
 if __name__ == "__main__":
@@ -125,7 +144,9 @@ if __name__ == "__main__":
         password=os.environ["RCC_UNMS_PASSWORD"],
     )
     device_id = os.environ["RCC_DEVICE_ID"]
-    backup_id = "3fd80b48-ef22-48d1-b989-ed7575884184"  # c.create_backup(os.environ["RCC_DEVICE_ID"])
-    print(c.get_backup(device_id, backup_id, filepath="/tmp/example.tar.gz"))
+    backup_id = (
+        "2e7affb0-ee4f-475f-b130-e2400ef5a3dd"
+    )  # c.create_backup(os.environ["RCC_DEVICE_ID"])
+    c.get_backup(device_id, backup_id, filepath="/tmp/test.tar.gz")
+    #print(c.upload_backup(device_id, filepath="/tmp/example.tar.gz"))
     # print(backup_id)
-

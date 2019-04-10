@@ -117,6 +117,26 @@ class BaseHttpClient:
             raise HTTPException(e)
         return response
 
+    def put_data(self, endpoint, params=None, files=None):
+        response = self._put_for_request(endpoint, params=params, files=files)
+        return response
+
+    def _put_for_request(self, endpoint, params=None, files=None):
+        response = None
+        try:
+            with self as session:
+                response = session.put(
+                    "{}{}".format(self.base_url, endpoint),
+                    timeout=self.timeout,
+                    files=files,
+                    params=params or {},
+                )
+        except requests.exceptions.ConnectionError as e:
+            raise HTTPException(e)
+        except Exception as e:
+            raise HTTPException(e)
+        return response
+
     def get_cache(self, key):
         if key in self._cache and self._cache[key]["expires"] > time.time():
             return self._cache[key]["obj"]

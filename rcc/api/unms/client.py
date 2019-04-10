@@ -108,10 +108,15 @@ class UNMSClient(BaseHttpClient):
         response = self.delete_data(endpoint)
         return response.json()["result"]
 
-    def get_backup(self, device_id, backup_id, replace_umns_key=False):
+    def get_backup(self, device_id, backup_id, filepath=None, replace_umns_key=False):
         endpoint = self.get_backup_endpoint.format(device_id=device_id, backup_id=backup_id)
         response = self.get_data(endpoint, params={"replaceUnmsKey": str(replace_umns_key).lower()})
-        return response
+        if filepath:
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+            return filepath
+        return response.content
+
 
 if __name__ == "__main__":
     c = UNMSClient(
@@ -120,7 +125,7 @@ if __name__ == "__main__":
         password=os.environ["RCC_UNMS_PASSWORD"],
     )
     device_id = os.environ["RCC_DEVICE_ID"]
-    backup_id = "33022dc5-a486-4fa3-aa01-a8f4828b23c0"  # c.create_backup(os.environ["RCC_DEVICE_ID"])
-    print(c.delete_backup(device_id, backup_id))
+    backup_id = "3fd80b48-ef22-48d1-b989-ed7575884184"  # c.create_backup(os.environ["RCC_DEVICE_ID"])
+    print(c.get_backup(device_id, backup_id, filepath="/tmp/example.tar.gz"))
     # print(backup_id)
 

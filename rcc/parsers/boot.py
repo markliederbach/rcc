@@ -1,5 +1,6 @@
 import os
 import re
+import stat
 from rcc.parsers.temp_parser import parse_conf
 
 
@@ -28,11 +29,16 @@ class BootParser:
 
     def set_netflow_server(self, ip_address):
         if ip_address != self.find_netflow_server():
-            self.raw_data = re.sub(self.re_netflow_server, r'\g<1>{}'.format(ip_address), self.raw_data)
+            self.raw_data = re.sub(
+                self.re_netflow_server, r"\g<1>{}".format(ip_address), self.raw_data
+            )
             self.conf_obj = self.parse_conf(self.raw_data)
 
     def dump(self, path=None):
-        with open(path or self.filepath, 'w') as c:
+        path = path or self.filepath
+        if os.path.exists(path):
+            os.chmod(path, stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+        with open(path or self.filepath, "w") as c:
             c.write(self.raw_data)
 
 
@@ -41,6 +47,6 @@ if __name__ == "__main__":
     b = BootParser(filepath)
     server = b.find_netflow_server()
     print(f"Current netflow server {server}")
-    b.set_netflow_server("999.999.999.999")
-    new_path = "/home/usrolh/Downloads/config/config.COPY"
+    b.set_netflow_server("1.2.3.4")
+    new_path = os.environ["RCC_CONFIG_FILE_REPLACE"]
     b.dump(path=new_path)

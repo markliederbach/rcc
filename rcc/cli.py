@@ -8,9 +8,15 @@ import click
 @click.command()
 def main(args=None):
     """Console script for rcc."""
-    click.echo("Replace this message by putting your code into "
-               "rcc.cli.main")
-    click.echo("See click documentation at http://click.pocoo.org/")
+    # Login to UNMS
+    # Create new backup for specified router ID
+    # Download and unarchive new backup
+    # Delete remote instance of new backup
+    # Get current public IP address
+    # Replace netflow IP with new IP address
+    # Archive file again
+    # Upload to UNMS
+    # Apply backup to router
     return 0
 
 

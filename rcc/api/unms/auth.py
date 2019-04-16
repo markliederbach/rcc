@@ -2,7 +2,6 @@ from requests.auth import AuthBase
 
 
 class HeaderAuth(AuthBase):
-
     def __init__(self, client):
         self.client = client
 

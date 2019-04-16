@@ -12,7 +12,7 @@ from rcc.parsers.boot import BootParser
 
 
 @click.command()
-@click.option('--device-id', envvar='RCC_DEVICE_ID')
+@click.option("--device-id", envvar="RCC_DEVICE_ID")
 def main(device_id):
     """Console script for rcc."""
     # Login to UNMS
@@ -43,15 +43,9 @@ def main(device_id):
     # Replace netflow IP with new IP address
     config_dir = os.environ["RCC_UNMS_CONFIG_DIR"]
     config_rel_filepath = os.path.join(
-        config_dir,
-        os.environ["RCC_UNMS_CONFIG_REL_FILE"]
+        config_dir, os.environ["RCC_UNMS_CONFIG_REL_FILE"]
     )
-    parser = BootParser(
-        filepath=os.path.join(
-            target_dir,
-            config_rel_filepath
-        )
-    )
+    parser = BootParser(filepath=os.path.join(target_dir, config_rel_filepath))
     current_ip_address = parser.find_netflow_server()
     if current_ip_address == public_ip_address:
         return 0

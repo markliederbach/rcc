@@ -1,5 +1,3 @@
-
-
 class RCCException(Exception):
     pass
 

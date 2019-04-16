@@ -40,13 +40,3 @@ class BootParser:
             os.chmod(path, stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
         with open(path or self.filepath, "w") as c:
             c.write(self.raw_data)
-
-
-if __name__ == "__main__":
-    filepath = os.environ["RCC_CONFIG_FILE"]
-    b = BootParser(filepath)
-    server = b.find_netflow_server()
-    print(f"Current netflow server {server}")
-    b.set_netflow_server("1.2.3.4")
-    new_path = os.environ["RCC_CONFIG_FILE_REPLACE"]
-    b.dump(path=new_path)

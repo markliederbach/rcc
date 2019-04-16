@@ -22,6 +22,8 @@ class UNMSClient(BaseHttpClient):
         upload_backup_endpoint=None,
         delete_backup_endpoint=None,
         get_backup_endpoint=None,
+        apply_backup_endpoint=None,
+        reboot_device_endpoint=None,
         session_timeout=None,
         token_header=None,
         **kwargs,
@@ -34,12 +36,18 @@ class UNMSClient(BaseHttpClient):
             create_backup_endpoint or "/devices/{device_id}/backups"
         )
         self.upload_backup_endpoint = (
-            upload_backup_endpoint or self.create_backup_endpoint
+            upload_backup_endpoint or "/devices/{device_id}/backups"
         )
         self.delete_backup_endpoint = (
-            delete_backup_endpoint or f"{self.create_backup_endpoint}/{{backup_id}}"
+            delete_backup_endpoint or "/devices/{device_id}/backups/{backup_id}"
         )
-        self.get_backup_endpoint = get_backup_endpoint or self.delete_backup_endpoint
+        self.get_backup_endpoint = (
+            get_backup_endpoint or "/devices/{device_id}/backups/{backup_id}"
+        )
+        self.apply_backup_endpoint = (
+            apply_backup_endpoint or "/devices/{device_id}/backups/{backup_id}/apply"
+        )
+        self.reboot_device_endpoint = reboot_device_endpoint or "/devices/{device_id}"
         self.token_header = token_header or "x-auth-token"
         self.session_timeout = session_timeout or 3_600_000
 
@@ -136,17 +144,25 @@ class UNMSClient(BaseHttpClient):
         response = self.put_data(endpoint, files=files)
         return response.json()["id"]
 
+    def apply_backup(self, device_id, backup_id):
+        endpoint = self.apply_backup_endpoint.format(
+            device_id=device_id, backup_id=backup_id
+        )
+        response = self.post_data(endpoint)
+        return response.json()
+
+    def reboot_device(self, device_id):
+        endpoint = self.reboot_device_endpoint.format(device_id)
+        response = self.post_data(endpoint)
+        return response.json()
+
 
 if __name__ == "__main__":
     c = UNMSClient(
-        base_url="https://network.liederbach.family/v2.1",
+        base_url=os.environ["RCC_UNMS_BASE_URL"],
         username=os.environ["RCC_UNMS_USER"],
         password=os.environ["RCC_UNMS_PASSWORD"],
     )
     device_id = os.environ["RCC_DEVICE_ID"]
-    backup_id = (
-        "2e7affb0-ee4f-475f-b130-e2400ef5a3dd"
-    )  # c.create_backup(os.environ["RCC_DEVICE_ID"])
+    backup_id = c.create_backup(os.environ["RCC_DEVICE_ID"])
     c.get_backup(device_id, backup_id, filepath="/tmp/test.tar.gz")
-    #print(c.upload_backup(device_id, filepath="/tmp/example.tar.gz"))
-    # print(backup_id)

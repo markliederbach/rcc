@@ -2,7 +2,7 @@ import time
 import signal
 import logging
 from contextlib import contextmanager
-from rcc.exceptions import BreakLoop, UNMSHTTPException
+from rcc.exceptions import BreakLoop, HTTPException
 
 
 logger = logging.getLogger(__name__)
@@ -51,5 +51,5 @@ def check_unms(unms_client, device_id):
             raise BreakLoop
         else:
             logger.warning("UNMS has started, but isn't ready yet. Waiting...")
-    except UNMSHTTPException:
+    except HTTPException:
         logger.warning(f"UNMS is not yet reachable. Waiting...")

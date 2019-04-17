@@ -33,21 +33,22 @@ def main(device_id, dns_timeout, unms_timeout):
 
     # Check if the current public IP address matches the DNS record
     public_ip_address = ip_client.get_public_ip_address()
-    dns_timeout_raised = True
-    with signal_timeout(dns_timeout):
-        while True:
-            dns_result = ip_client.dns_lookup(client.get_domain())
-            if dns_result == public_ip_address:
-                dns_timeout_raised = False
-                break
-            time.sleep(10)
+    if dns_timeout >= 0:
+        dns_timeout_raised = True
+        with signal_timeout(dns_timeout):
+            while True:
+                dns_result = ip_client.dns_lookup(client.get_domain())
+                if dns_result == public_ip_address:
+                    dns_timeout_raised = False
+                    break
+                time.sleep(10)
 
-    if dns_timeout_raised:
-        click.echo(
-            f"Timeout ({dns_timeout}s) reached while waiting for DNS to match current IP address",
-            err=True,
-        )
-        return 0
+        if dns_timeout_raised:
+            click.echo(
+                f"Timeout ({dns_timeout}s) reached while waiting for DNS to match current IP address",
+                err=True,
+            )
+            return 0
 
     # Check if UNMS is running yet (wait to see if it comes up)
     unms_timeout_raised = True

@@ -1,4 +1,5 @@
 import os
+import click
 import logging
 import requests
 import datetime
@@ -84,6 +85,7 @@ class UNMSClient(BaseHttpClient):
         try:
             sess = self.get_session(use_auth=False)
             response = self.get_auth_token(sess, token_url)
+            click.echo(f"Response [{response.status_code}] from token: Headers: {response.headers} Data: {response.json()}")
             token = response.headers[self.token_header]
             sess.close()
             session_timeout_sec = self.session_timeout / 1000 / 60

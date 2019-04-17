@@ -1,5 +1,4 @@
 import os
-import click
 import logging
 import requests
 import datetime
@@ -85,9 +84,11 @@ class UNMSClient(BaseHttpClient):
         try:
             sess = self.get_session(use_auth=False)
             response = self.get_auth_token(sess, token_url)
-            click.echo(
-                f"Response [{response.status_code}] from token: Headers: {response.headers} Data: {response.text}"
+            logger.debug(
+                f"Response[{response.status_code}] for {token_url}:\nHeaders:{response.headers}\nContent:\n{response.text}"
             )
+            if response.status_code != 200:
+                raise UNMSHTTPException("Received non-okay response while getting token")
             token = response.headers[self.token_header]
             sess.close()
             session_timeout_sec = self.session_timeout / 1000 / 60

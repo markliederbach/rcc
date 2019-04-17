@@ -1,8 +1,12 @@
 import time
+import logging
 import threading
 import requests
 import certifi
 from rcc.exceptions import HTTPException
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseHttpClient:
@@ -69,11 +73,15 @@ class BaseHttpClient:
     def _get_data_for_request(self, endpoint, params=None):
         response = None
         try:
+            target_url = "{}{}".format(self.base_url, endpoint)
             with self as session:
                 response = session.get(
-                    "{}{}".format(self.base_url, endpoint),
+                    target_url,
                     timeout=self.timeout,
                     params=params if params is not None else {},
+                )
+                logger.debug(
+                    f"Response[{response.status_code}] for {target_url}:\nHeaders:{response.headers}\nContent:\n{response.text}"
                 )
         except requests.exceptions.ConnectionError as e:
             raise HTTPException(e)
@@ -88,11 +96,15 @@ class BaseHttpClient:
     def _post_data_for_request(self, endpoint, payload=None):
         response = None
         try:
+            target_url = "{}{}".format(self.base_url, endpoint)
             with self as session:
                 response = session.post(
-                    "{}{}".format(self.base_url, endpoint),
+                    target_url,
                     timeout=self.timeout,
                     json=payload or {},
+                )
+                logger.debug(
+                    f"Response[{response.status_code}] for {target_url}:\nHeaders:{response.headers}\nContent:\n{response.text}"
                 )
         except requests.exceptions.ConnectionError as e:
             raise HTTPException(e)
@@ -107,9 +119,13 @@ class BaseHttpClient:
     def _delete_for_request(self, endpoint):
         response = None
         try:
+            target_url = "{}{}".format(self.base_url, endpoint)
             with self as session:
                 response = session.delete(
-                    "{}{}".format(self.base_url, endpoint), timeout=self.timeout
+                    target_url, timeout=self.timeout
+                )
+                logger.debug(
+                    f"Response[{response.status_code}] for {target_url}:\nHeaders:{response.headers}\nContent:\n{response.text}"
                 )
         except requests.exceptions.ConnectionError as e:
             raise HTTPException(e)
@@ -124,12 +140,16 @@ class BaseHttpClient:
     def _put_for_request(self, endpoint, params=None, files=None):
         response = None
         try:
+            target_url = "{}{}".format(self.base_url, endpoint)
             with self as session:
                 response = session.put(
-                    "{}{}".format(self.base_url, endpoint),
+                    target_url,
                     timeout=self.timeout,
                     files=files,
                     params=params or {},
+                )
+                logger.debug(
+                    f"Response[{response.status_code}] for {target_url}:\nHeaders:{response.headers}\nContent:\n{response.text}"
                 )
         except requests.exceptions.ConnectionError as e:
             raise HTTPException(e)

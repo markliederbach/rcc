@@ -8,3 +8,7 @@ class HTTPException(RCCException):
 
 class UNMSHTTPException(HTTPException):
     pass
+
+
+class BreakLoop(RCCException):
+    pass

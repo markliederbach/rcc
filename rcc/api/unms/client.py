@@ -2,7 +2,6 @@ import os
 import logging
 import requests
 import datetime
-from urllib.parse import urlparse
 
 from rcc.api.http import BaseHttpClient
 from rcc.api.unms import auth
@@ -33,7 +32,7 @@ class UNMSClient(BaseHttpClient):
 
         self.login_endpoint = login_endpoint or "/user/login"
         self.users_endpoint = users_endpoint or "/users"
-        self.devices_endpoint = devices_endpoint
+        self.devices_endpoint = devices_endpoint or "/devices/{device_id}"
         self.create_backup_endpoint = (
             create_backup_endpoint or "/devices/{device_id}/backups"
         )
@@ -58,10 +57,6 @@ class UNMSClient(BaseHttpClient):
         super().__init__(
             base_url=base_url, username=username, password=password, **kwargs
         )
-
-    def get_domain(self):
-        parsed_uri = urlparse(self.base_url)
-        return parsed_uri.netloc
 
     def get_session(self, use_auth=True):
         """Configure a requests session to use."""
@@ -169,6 +164,11 @@ class UNMSClient(BaseHttpClient):
         endpoint = self.reboot_device_endpoint.format(device_id)
         response = self.post_data(endpoint)
         return response.json()
+
+    def get_device(self, device_id):
+        endpoint = self.devices_endpoint.format(device_id)
+        response = self.get_data(endpoint)
+        return response
 
 
 if __name__ == "__main__":

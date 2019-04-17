@@ -12,8 +12,7 @@ from rcc.api.unms.client import UNMSClient
 from rcc.api.ip_address.client import PublicIPAddress
 from rcc.file_manager import FileManager
 from rcc.parsers.boot import BootParser
-from rcc.utils import signal_timeout
-from rcc.exceptions import UNMSHTTPException
+from rcc.utils import do_until, check_dns, check_unms
 
 
 logger = logging.getLogger(__name__)
@@ -42,42 +41,29 @@ def main(device_id, dns_timeout, unms_timeout, verbose):
         ip_address_endpoint=os.environ["RCC_IP_ENDPOINT"],
     )
 
-    # Check if the current public IP address matches the DNS record
     public_ip_address = ip_client.get_public_ip_address()
+
+    # Check if the current public IP address matches the DNS record
     if dns_timeout >= 0:
-        dns_timeout_raised = True
-        with signal_timeout(dns_timeout):
-            while True:
-                dns_result = ip_client.dns_lookup(client.get_domain())
-                if dns_result == public_ip_address:
-                    dns_timeout_raised = False
-                    break
-                time.sleep(10)
+
+        dns_timeout_raised = do_until(
+            check_dns, dns_timeout, 10, client, ip_client, public_ip_address
+        )
 
         if dns_timeout_raised:
             logger.critical(
-                f"Timeout ({dns_timeout}s) reached while waiting for DNS to match current IP address",
+                f"Timeout ({dns_timeout}s) reached while waiting for DNS to match current IP address"
             )
             return 0
 
     # Check if UNMS is running yet (wait to see if it comes up)
-    unms_timeout_raised = True
-    with signal_timeout(unms_timeout):
-        while True:
-            try:
-                client.set_token()
-                unms_timeout_raised = False
-                break
-            except UNMSHTTPException:
-                logger.warning(f"UNMS is not yet reachable, waiting...")
-            time.sleep(1)
+    unms_timeout_raised = do_until(check_unms, unms_timeout, 15, client, device_id)
 
     if unms_timeout_raised:
         logger.critical(
-            f"Timeout ({unms_timeout}s) reached while waiting for UNMS to come up",
+            f"Timeout ({unms_timeout}s) reached while waiting for UNMS to come up"
         )
         return 0
-
 
     # Create new backup for specified router ID
     backup_id = client.create_backup(device_id)

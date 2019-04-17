@@ -3,6 +3,8 @@ import logging
 import threading
 import requests
 import certifi
+from urllib.parse import urlparse
+
 from rcc.exceptions import HTTPException
 
 
@@ -172,3 +174,7 @@ class BaseHttpClient:
             for key in list(self._cache):
                 if self._cache[key]["expires"] <= time.time():
                     self._cache.pop(key)
+
+    def get_domain(self):
+        parsed_uri = urlparse(self.base_url)
+        return parsed_uri.netloc

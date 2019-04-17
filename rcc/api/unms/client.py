@@ -48,7 +48,7 @@ class UNMSClient(BaseHttpClient):
         self.apply_backup_endpoint = (
             apply_backup_endpoint or "/devices/{device_id}/backups/{backup_id}/apply"
         )
-        self.reboot_device_endpoint = reboot_device_endpoint or "/devices/{device_id}"
+        self.reboot_device_endpoint = reboot_device_endpoint or "/devices/{device_id}/restart"
         self.token_header = token_header or "x-auth-token"
         self.session_timeout = session_timeout or 3_600_000
 

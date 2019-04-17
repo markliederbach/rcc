@@ -1,3 +1,5 @@
+import socket
+
 from rcc.api.http import BaseHttpClient
 
 
@@ -8,3 +10,9 @@ class PublicIPAddress(BaseHttpClient):
 
     def get_public_ip_address(self):
         return self.get_data(self.ip_address_endpoint).text
+
+    def dns_lookup(self, hostname=None, ip_address=None):
+        assert bool(hostname) != bool(ip_address), "Must pass either a hostname or ip_address"
+        if hostname:
+            return socket.gethostbyname(hostname)
+        return socket.gethostbyaddr(ip_address)

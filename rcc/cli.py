@@ -3,17 +3,20 @@
 """Console script for rcc."""
 import os
 import sys
+import time
 import click
 
 from rcc.api.unms.client import UNMSClient
 from rcc.api.ip_address.client import PublicIPAddress
 from rcc.file_manager import FileManager
 from rcc.parsers.boot import BootParser
+from rcc.utils import signal_timeout
 
 
 @click.command()
 @click.option("--device-id", envvar="RCC_DEVICE_ID")
-def main(device_id):
+@click.option("-w", "--dns-timeout", default=300, show_default="300s (5 minutes)")
+def main(device_id, dns_timeout):
     """Console script for rcc."""
     # Login to UNMS
     client = UNMSClient(
@@ -25,6 +28,24 @@ def main(device_id):
         base_url=os.environ["RCC_IP_BASE_URL"],
         ip_address_endpoint=os.environ["RCC_IP_ENDPOINT"],
     )
+
+    # Check if the current public IP address matches the DNS record
+    public_ip_address = ip_client.get_public_ip_address()
+    timeout_raised = True
+    with signal_timeout(dns_timeout):
+        while True:
+            dns_result = ip_client.dns_lookup(client.get_domain())
+            if dns_result == public_ip_address:
+                timeout_raised = False
+                break
+            time.sleep(10)
+
+    if timeout_raised:
+        click.echo(
+            f"Timeout ({dns_timeout}s) reached while waiting for DNS to match current IP address",
+            err=True,
+        )
+        return 0
 
     # Create new backup for specified router ID
     backup_id = client.create_backup(device_id)
@@ -40,8 +61,6 @@ def main(device_id):
     file_manager = FileManager(filepath, target_dir)
     file_manager.untar()
 
-    # Get current public IP address
-    public_ip_address = ip_client.get_public_ip_address()
     click.echo(f"Current public IP address is {public_ip_address}")
 
     # Replace netflow IP with new IP address

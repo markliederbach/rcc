@@ -2,6 +2,8 @@ import os
 import logging
 import requests
 import datetime
+from urllib.parse import urlparse
+
 from rcc.api.http import BaseHttpClient
 from rcc.api.unms import auth
 from rcc.exceptions import UNMSHTTPException
@@ -56,6 +58,10 @@ class UNMSClient(BaseHttpClient):
         )
 
         self.token, self.expire_time = self.get_token()
+
+    def get_domain(self):
+        parsed_uri = urlparse(self.base_url)
+        return parsed_uri.netloc
 
     def get_session(self, use_auth=True):
         """Configure a requests session to use."""
@@ -163,6 +169,7 @@ if __name__ == "__main__":
         username=os.environ["RCC_UNMS_USER"],
         password=os.environ["RCC_UNMS_PASSWORD"],
     )
+    domain = c.get_domain()
     device_id = os.environ["RCC_DEVICE_ID"]
     backup_id = c.create_backup(os.environ["RCC_DEVICE_ID"])
     c.get_backup(device_id, backup_id, filepath="/tmp/test.tar.gz")

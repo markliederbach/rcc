@@ -53,11 +53,11 @@ class UNMSClient(BaseHttpClient):
         self.token_header = token_header or "x-auth-token"
         self.session_timeout = session_timeout or 3_600_000
 
+        self.token = self.expire_time = None
+
         super().__init__(
             base_url=base_url, username=username, password=password, **kwargs
         )
-
-        self.token, self.expire_time = self.get_token()
 
     def get_domain(self):
         parsed_uri = urlparse(self.base_url)
@@ -109,14 +109,17 @@ class UNMSClient(BaseHttpClient):
             timeout=self.timeout,
         )
 
+    def set_token(self):
+        self.token, self.expire_time = self.get_token()
+
     def token_expired(self):
-        if self.expire_time < datetime.datetime.now():
+        if self.expire_time is None or self.expire_time < datetime.datetime.now():
             return True
         return False
 
     def check_token(self):
         if self.token_expired():
-            self.token, self.expire_time = self.get_token()
+            self.set_token()
 
     def create_backup(self, device_id):
         endpoint = self.create_backup_endpoint.format(device_id=device_id)

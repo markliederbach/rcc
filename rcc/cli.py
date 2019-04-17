@@ -11,12 +11,14 @@ from rcc.api.ip_address.client import PublicIPAddress
 from rcc.file_manager import FileManager
 from rcc.parsers.boot import BootParser
 from rcc.utils import signal_timeout
+from rcc.exceptions import UNMSHTTPException
 
 
 @click.command()
 @click.option("--device-id", envvar="RCC_DEVICE_ID")
 @click.option("-w", "--dns-timeout", default=300, show_default="300s (5 minutes)")
-def main(device_id, dns_timeout):
+@click.option("-u", "--unms-timeout", default=60, show_default="60s (1 minute)")
+def main(device_id, dns_timeout, unms_timeout):
     """Console script for rcc."""
     # Login to UNMS
     client = UNMSClient(
@@ -31,21 +33,41 @@ def main(device_id, dns_timeout):
 
     # Check if the current public IP address matches the DNS record
     public_ip_address = ip_client.get_public_ip_address()
-    timeout_raised = True
+    dns_timeout_raised = True
     with signal_timeout(dns_timeout):
         while True:
             dns_result = ip_client.dns_lookup(client.get_domain())
             if dns_result == public_ip_address:
-                timeout_raised = False
+                dns_timeout_raised = False
                 break
             time.sleep(10)
 
-    if timeout_raised:
+    if dns_timeout_raised:
         click.echo(
             f"Timeout ({dns_timeout}s) reached while waiting for DNS to match current IP address",
             err=True,
         )
         return 0
+
+    # Check if UNMS is running yet (wait to see if it comes up)
+    unms_timeout_raised = True
+    with signal_timeout(unms_timeout):
+        while True:
+            try:
+                client.set_token()
+                unms_timeout_raised = False
+                break
+            except UNMSHTTPException:
+                click.echo(click.style(f"UNMS is not yet reachable, waiting...", fg='yellow'))
+            time.sleep(1)
+
+    if unms_timeout_raised:
+        click.echo(
+            f"Timeout ({unms_timeout}s) reached while waiting for UNMS to come up",
+            err=True,
+        )
+        return 0
+
 
     # Create new backup for specified router ID
     backup_id = client.create_backup(device_id)

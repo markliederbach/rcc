@@ -18,7 +18,7 @@ class UNMSClient(BaseHttpClient):
         password,
         login_endpoint=None,
         users_endpoint=None,
-        devices_endpoint=None,
+        get_device_endpoint=None,
         create_backup_endpoint=None,
         upload_backup_endpoint=None,
         delete_backup_endpoint=None,
@@ -32,7 +32,7 @@ class UNMSClient(BaseHttpClient):
 
         self.login_endpoint = login_endpoint or "/user/login"
         self.users_endpoint = users_endpoint or "/users"
-        self.devices_endpoint = devices_endpoint or "/devices/{device_id}"
+        self.get_device_endpoint = get_device_endpoint or "/devices/{device_id}"
         self.create_backup_endpoint = (
             create_backup_endpoint or "/devices/{device_id}/backups"
         )
@@ -83,7 +83,9 @@ class UNMSClient(BaseHttpClient):
                 f"Response[{response.status_code}] for {token_url}:\nHeaders:{response.headers}\nContent:\n{response.text}"
             )
             if response.status_code != 200:
-                raise UNMSHTTPException("Received non-okay response while getting token")
+                raise UNMSHTTPException(
+                    "Received non-okay response while getting token"
+                )
             token = response.headers[self.token_header]
             sess.close()
             session_timeout_sec = self.session_timeout / 1000 / 60
@@ -161,12 +163,12 @@ class UNMSClient(BaseHttpClient):
         return response.json()
 
     def reboot_device(self, device_id):
-        endpoint = self.reboot_device_endpoint.format(device_id)
+        endpoint = self.reboot_device_endpoint.format(device_id=device_id)
         response = self.post_data(endpoint)
         return response.json()
 
     def get_device(self, device_id):
-        endpoint = self.devices_endpoint.format(device_id)
+        endpoint = self.get_device_endpoint.format(device_id=device_id)
         response = self.get_data(endpoint)
         return response
 
@@ -179,5 +181,7 @@ if __name__ == "__main__":
     )
     domain = c.get_domain()
     device_id = os.environ["RCC_DEVICE_ID"]
-    backup_id = c.create_backup(os.environ["RCC_DEVICE_ID"])
-    c.get_backup(device_id, backup_id, filepath="/tmp/test.tar.gz")
+    resp = c.get_device(device_id)
+    print(resp)
+    # backup_id = c.create_backup(os.environ["RCC_DEVICE_ID"])
+    # c.get_backup(device_id, backup_id, filepath="/tmp/test.tar.gz")
